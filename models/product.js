@@ -1,6 +1,6 @@
 const mongoose=require("mongoose")
-const { type } = require("os")
-const { stringify } = require("querystring")
+const joi=require("joi")
+
 
 
 const productSchema=new mongoose.Schema({
@@ -9,17 +9,33 @@ const productSchema=new mongoose.Schema({
         required:true,
         unique:true
     },
-    price:Number,
-    description:String,
+    price:{
+        type:number,
+        required:true
+    },
+    description:{
+        type:string,
+        required:true
+    },
     image:{
         type:String,
         required:true
     },category:{
         type:String,
-        enum:{
-            values:['cat','dog']
-        }
+        enum:['cat','dog'] 
+        
     },
 
 })
+
+function validateProductDtl(product){
+     const schema = joi.object({
+        name:joi.string().required(),
+        price:joi.number().required(),
+        description:joi.string().required(),
+        image:joi.string().required(),
+        category:joi.string().valid("cat","dog")
+     })
+
+}
 module.exports=mongoose.model('productSchema',productSchema)
