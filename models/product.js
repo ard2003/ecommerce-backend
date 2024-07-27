@@ -10,11 +10,11 @@ const productSchema=new mongoose.Schema({
         unique:true
     },
     price:{
-        type:number,
+        type:Number,
         required:true
     },
     description:{
-        type:string,
+        type:String,
         required:true
     },
     image:{
@@ -38,4 +38,5 @@ function validateProductDtl(product){
      })
 
 }
+module.exports=validateProductDtl
 module.exports=mongoose.model('productSchema',productSchema)
