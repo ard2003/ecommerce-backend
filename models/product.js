@@ -1,42 +1,39 @@
-const mongoose=require("mongoose")
-const joi=require("joi")
+// models/product.js
+const mongoose = require('mongoose');
+const Joi = require('joi');
 
+const productSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+  },
+  image: {
+    type: String,
+    required: true,
+  }
+});
 
+const validateProductDtl = (product) => {
+  const schema = Joi.object({
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+    price: Joi.number().required(),
+    category: Joi.string().required(),
+  });
+  return schema.validate(product);
+};
 
-const productSchema=new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
-        unique:true
-    },
-    price:{
-        type:Number,
-        required:true
-    },
-    description:{
-        type:String,
-        required:true
-    },
-    image:{
-        type:String,
-        required:true
-    },category:{
-        type:String,
-        enum:['cat','dog'] 
-        
-    },
-
-})
-
-function validateProductDtl(product){
-     const schema = joi.object({
-        name:joi.string().required(),
-        price:joi.number().required(),
-        description:joi.string().required(),
-        image:joi.string().required(),
-        category:joi.string().valid("cat","dog")
-     })
-
-}
-module.exports=validateProductDtl
-module.exports=mongoose.model('productSchema',productSchema)
+module.exports = mongoose.model('Product', productSchema);
+module.exports.validateProductDtl = validateProductDtl;
