@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
-app.use(express.json()); // Built-in middleware to parse JSON bodies
+app.use(express.json()); 
 
 app.use('/api', adminRoute);
 

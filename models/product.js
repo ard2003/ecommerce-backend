@@ -6,6 +6,8 @@ const productSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    unique: true,
+    
   },
   description: {
     type: String,
@@ -19,10 +21,10 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  image: {
-    type: String,
-    required: true,
-  }
+    image: {
+      type: String,
+      required: true,
+    }
 });
 
 const validateProductDtl = (product) => {
@@ -32,7 +34,7 @@ const validateProductDtl = (product) => {
     price: Joi.number().required(),
     category: Joi.string().required(),
   });
-  return schema.validate(product);
+  return schema.validate(product);      
 };
 
 module.exports = mongoose.model('Product', productSchema);
