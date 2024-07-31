@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { adminschema, validateAdmin } = require("../models/admin");
 const { validateProductDtl } = require("../models/product");
+const UserSchema = require("../models/user");
 const productSchema = require("../models/product");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -85,56 +86,106 @@ const updateProduct = async (req, res) => {
   const { error } = validateProductDtl(req.body);
   if (error) {
     return res.status(400).send(error.details[0].message);
-  }try {
-    const { name, category, description, price, image } = req.body
-    const product=await productSchema.findById(id)
-    console.log(id)
-if(!product){
-  return res.status(400).json('message item not found')
-}
+  }
+  try {
+    const { name, category, description, price, image } = req.body;
+    const product = await productSchema.findById(id);
+    console.log(id);
+    if (!product) {
+      return res.status(400).json("message item not found");
+    }
 
-product.image = req.cloudinaryImageUrl
-await productSchema.findByIdAndUpdate({
-  _id:id
-},
-{
-  name:name,
-  price:price,
-  image:req.cloudinaryImageUrl,
-  description:description,
-  category:category,
-
-})
-res.status(200).json({success:true,
-  message:"updated successfully"
-})
+    product.image = req.cloudinaryImageUrl;
+    await productSchema.findByIdAndUpdate(
+      {
+        _id: id,
+      },
+      {
+        name: name,
+        price: price,
+        image: req.cloudinaryImageUrl,
+        description: description,
+        category: category,
+      }
+    );
+    res.status(200).json({ success: true, message: "updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message }) 
+    res.status(500).json({ message: error.message });
   }
 };
 //delete products
-const deleteProduct=async(req,res)=>{
-  const {id}=req.params
-  console.log(req.head)
+const deleteProduct = async (req, res) => {
+  const { id } = req.params;
 
-  const deleted=await productSchema.findByIdAndDelete(id)
+  const deleted = await productSchema.findByIdAndDelete(id);
+
   if (!deleted) {
-  
     return res.status(404).json({
       success: false,
       message: "Product not found",
-    })
+    });
   }
- res.status(200).json({
-  message:"successfully deleted"
- })
-}
 
+  res.status(200).json({
+    success: true,
+    message: "Successfully deleted",
+  });
+};
+// viewAllproducts
+const viewProducts = async (req, res) => {
+  const products = await productSchema.find();
+  if (products.length === 0) {
+    res.status(404).json({ message: "no products found" });
+  } else {
+    res.status(201).json(products);
+  }
+};
+// view product
+
+const viewProduct = async (req, res) => {
+  const productId = req.params.id;
+  const product = await productSchema.findById(productId);
+  if (!product) {
+    res.status(404)
+  } else {
+    res.status(201).json(product);
+  }
+};
 // view users
 
-const viewUsers=async(req,res)=>{
-  
-}
+const viewUsers = async (req, res) => {
+  const users = await UserSchema.find();
+  if (users.length === 0) {
+    res.status(404).json({ message: "no users found" });
+  } else {
+    res.status(201).json(users);
+  }
+};
+
+// view user
+const viewUser = async (req, res) => {
+  const userId = req.params.id;
 
 
-module.exports = { adminLogin, adminRegistration, addproduct ,updateProduct,deleteProduct};
+  const user = await UserSchema.findById(userId);
+  if (!user) {
+    res.status(404).json({
+      message: "no user found",
+    });
+  } else {
+    res.status(201).json(user);
+  }
+};
+//
+
+module.exports = {
+  adminLogin,
+  adminRegistration,
+  addproduct,
+  updateProduct,
+  deleteProduct,
+  viewUsers,
+  viewUser,
+  viewProducts,
+  viewProduct,
+};
