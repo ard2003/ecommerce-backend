@@ -126,8 +126,14 @@ const deleteProduct=async(req,res)=>{
     })
   }
  res.status(200).json({
-  message:"success fully deleted"
+  message:"successfully deleted"
  })
+}
+
+// view users
+
+const viewUsers=async(req,res)=>{
+  
 }
 
 
