@@ -9,10 +9,19 @@ router.post('/admin/login', controller.adminLogin);
 router.post('/admin/productupload',uploadFile,controller.addproduct)
 router.put('/admin/updateProduct/:id',uploadFile,controller.updateProduct)
 router.delete('/admin/deleteproduct/:id', controller.deleteProduct)
-router.get('/admin/viewusers', controller.viewUsers)
-router.get('/admin/viewuser/:id', controller.viewUser)
-router.get('/admin/viewproducts', controller.viewProducts)
-router.get('/admin/viewproduct/:id', controller.viewProduct)
+router.get('/admin/users', controller.viewUsers)
+router.get('/admin/user/:id', controller.viewUser)
+router.get('/admin/products', controller.viewProducts)
+router.get('/admin/product/:id', controller.viewProduct)
+router.get('/admin/productbycatagory/:id', controller.productByCatagory)
+router.get('/admin/usercart/:id', controller.getcart)
+router.get('/admin/order/:userId', controller.order)
+router.get('/admin/orders', controller.orders)
+router.get('/admin/revanue', controller.totalRevenue)
+
+
+
+
 
 
 

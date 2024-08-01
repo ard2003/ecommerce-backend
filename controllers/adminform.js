@@ -5,12 +5,15 @@ const { adminschema, validateAdmin } = require("../models/admin");
 const { validateProductDtl } = require("../models/product");
 const UserSchema = require("../models/user");
 const productSchema = require("../models/product");
+const cartSchema = require("../models/cart");
+const orderSchema = require("../models/order");
 const dotenv = require("dotenv");
 dotenv.config();
 //VALIDATE ADMIN REGISTRAION
 const adminRegistration = async (req, res) => {
+  console.log("dsfdsfds ",req.body);
   const { error } = validateAdmin(req.body);
-
+ 
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
@@ -41,6 +44,9 @@ const adminRegistration = async (req, res) => {
 const adminLogin = async (req, res) => {
   //VALIDATE ADMIN LOGIN
   const { email, password } = req.body;
+  console.log(req.body)
+
+
   let admin = await adminschema.findOne({ email });
   if (!admin) {
     return res.status(400).send("Invalid email or password");
@@ -55,6 +61,7 @@ const adminLogin = async (req, res) => {
 };
 //PRODUCT ADDING SECTION
 const addproduct = async (req, res) => {
+  
   console.log("Request Body:", req.body);
 
   const { error } = validateProductDtl(req.body);
@@ -64,7 +71,7 @@ const addproduct = async (req, res) => {
 
   try {
     const { name, category, description, price, image } = req.body;
-    const product = await new productSchema({
+    const product = new productSchema({
       name,
       description,
       price,
@@ -146,7 +153,7 @@ const viewProduct = async (req, res) => {
   const productId = req.params.id;
   const product = await productSchema.findById(productId);
   if (!product) {
-    res.status(404)
+    res.status(404);
   } else {
     res.status(201).json(product);
   }
@@ -166,7 +173,6 @@ const viewUsers = async (req, res) => {
 const viewUser = async (req, res) => {
   const userId = req.params.id;
 
-
   const user = await UserSchema.findById(userId);
   if (!user) {
     res.status(404).json({
@@ -176,7 +182,75 @@ const viewUser = async (req, res) => {
     res.status(201).json(user);
   }
 };
-//
+//view product by category
+
+const productByCatagory = async (req, res) => {
+  const category = req.params.id;
+  const productCatagory = await productSchema.aggregate([
+    { $match: { category: category } },
+  ]);
+  if (productCatagory.length === 0) {
+    res.status(404).json({ message: "product not found" });
+  }
+  {
+    res.status(201).json(productCatagory);
+  }
+};
+
+//view user cart
+const getcart = async (req, res) => {
+  const userId = req.params.id;
+  const cart = await cartSchema
+    .findOne({ userId: userId })
+    .populate("cart.productId");
+  if (!cart || cart.cart.length === 0) {
+    res.status(404).json({
+      message: "cart is empty",
+    });
+  }
+  {
+    res.status(201).json(cart);
+  }
+};
+// view order
+
+const orders = async (req, res) => {
+  
+  const products = await orderSchema.find().populate("products.productId");
+  if (products.length === 0) {
+    res.status(404).json({
+      message: "no orders found", 
+    });
+  }
+  {
+    res.status(201).json(products);
+  }
+};
+//specifiic order
+
+const order = async(req,res) => {
+  const userId = req.params;
+  console.log(userId)
+const products=await orderSchema.find({userId:userId}).populate("products.productId")
+console.log(products,"this product")
+if(!products){
+  res.status(404).json({
+    message:'order not found'
+  })
+}else{
+  res.status(201).json(products)
+}
+};
+const totalRevenue=async(req,res)=>{
+  const revenue=await orderSchema.aggregate([
+    {$group:{_id:null,totalrevenue:{$sum:'$totalPrice'}}}
+  ])
+  if(revenue.length > 0){
+    res.status(200).json(revenue[0])
+  }else{
+    res.status(404).json({message:'no revanue genarated'})
+  }
+}
 
 module.exports = {
   adminLogin,
@@ -188,4 +262,9 @@ module.exports = {
   viewUser,
   viewProducts,
   viewProduct,
+  productByCatagory,
+  getcart,
+  orders,
+  order,
+  totalRevenue,
 };
