@@ -2,9 +2,10 @@ const express = require('express');
 const controller = require('../controllers/adminform');
 const router = express.Router();
 const {uploadFile} =require('../middleware/fileuploding')
+const veryfyToken=require('../middleware/adminAuth')
 
 
-router.post('/admin/register', controller.adminRegistration);
+router.post('/admin/register',controller.adminRegistration);
 router.post('/admin/login', controller.adminLogin);
 router.post('/admin/productupload',uploadFile,controller.addproduct)
 router.put('/admin/updateProduct/:id',uploadFile,controller.updateProduct)

@@ -34,8 +34,9 @@ const adminRegistration = async (req, res) => {
 
     await admin.save();
     const token = jwt.sign({ _id: admin.id }, process.env.SECRET_KEY);
-
     return res.status(200).json({ admin, token });
+
+    
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }
@@ -43,11 +44,12 @@ const adminRegistration = async (req, res) => {
 //ADMIN LOGIN SECTION
 const adminLogin = async (req, res) => {
   //VALIDATE ADMIN LOGIN
+  console.log(req.cookies)
   const { email, password } = req.body;
   console.log(req.body)
 
-
-  let admin = await adminschema.findOne({ email });
+try{
+  const admin = await adminschema.findOne({ email });
   if (!admin) {
     return res.status(400).send("Invalid email or password");
   }
@@ -56,12 +58,20 @@ const adminLogin = async (req, res) => {
     return res.status(400).send("Invalid email or password");
   }
   //JWT TOKE CREATION
-  const token = jwt.sign({ _id: admin._id }, process.env.SECRET_KEY);
+  const token = jwt.sign(
+    { _id: admin._id, email: admin.email, username: admin.username },
+    process.env.SECRET_KEY
+    
+  );
+  res.cookie('token',token)
   return res.status(200).json({ admin, token });
+ }catch(err){
+  return res.status(500).json({ message: err.message });
+ }
 };
 //PRODUCT ADDING SECTION
 const addproduct = async (req, res) => {
-  
+ 
   console.log("Request Body:", req.body);
 
   const { error } = validateProductDtl(req.body);
@@ -87,7 +97,6 @@ const addproduct = async (req, res) => {
 //update product
 
 const updateProduct = async (req, res) => {
-  // const { token } = req.cookies;
   const { id } = req.params;
 
   const { error } = validateProductDtl(req.body);
@@ -123,7 +132,7 @@ const updateProduct = async (req, res) => {
 //delete products
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
-
+  const { token } = req.cookies;
   const deleted = await productSchema.findByIdAndDelete(id);
 
   if (!deleted) {
@@ -140,6 +149,8 @@ const deleteProduct = async (req, res) => {
 };
 // viewAllproducts
 const viewProducts = async (req, res) => {
+  const token=req.cookies
+console.log(token)
   const products = await productSchema.find();
   if (products.length === 0) {
     res.status(404).json({ message: "no products found" });

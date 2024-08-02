@@ -1,23 +1,18 @@
 const jwt=require('jsonwebtoken')
 
 module.exports = function veryfyToken(req,res,next){
-    const {token,refreshToken}=req.cookies
+    const {token} = req.cookies
+    console.log('THIS FROM MIDDLEWEAR',token)
 
     if(!token){
-        if(!refreshToken){
-            return res.status(404).json({message :'pls login'})
-        }
         return res.status(404).json({message: 'Unauthorized'})
-    }
-    jwt.verify(token,process.env.ACCES_TOKEN_SECRET,(err,decoded)=>{
+    }jwt.verify(token,process.env.SECRET_KEY,(err,decoded)=>{
         if(err){
             console.log(err)
-            return res.status(404).json({
-                message:"Unauthorized"
-            })
+            return res.status(401).json({message:"anuthorized"})
         }
-            req.email=decoded.email
-        next()
+        req.email=decoded.email;
+        next
     })
 }
  
