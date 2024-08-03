@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const Joi = require("joi");
 
 const adminschema = new mongoose.Schema({
@@ -20,7 +18,7 @@ const adminschema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 4,
-    maxlength: 120,
+    maxlength: 8,
   },
   loginCount: {
     type: Number,
@@ -32,7 +30,7 @@ function validateAdmin(admin) {
   const schema = Joi.object({
     username: Joi.string().required(),
     email: Joi.string().required().email(),
-    password: Joi.string().min(4).max(120).required(),
+    password: Joi.string().min(4).max(8).required(),
   });
   return schema.validate(admin);
   

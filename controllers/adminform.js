@@ -11,7 +11,6 @@ const dotenv = require("dotenv");
 dotenv.config();
 //VALIDATE ADMIN REGISTRAION
 const adminRegistration = async (req, res) => {
-  console.log("dsfdsfds ",req.body);
   const { error } = validateAdmin(req.body);
  
   if (error) {
@@ -20,7 +19,7 @@ const adminRegistration = async (req, res) => {
   //finding same ADMIN
   let admin = await adminschema.findOne({ email: req.body.email });
   if (admin) {
-    return res.status(400).send("User already exists, please sign in");
+    return res.status(422).send("email already exists, please sign in");
   }
   //password hashing
   try {
@@ -33,8 +32,8 @@ const adminRegistration = async (req, res) => {
     });
 
     await admin.save();
-    const token = jwt.sign({ _id: admin.id }, process.env.SECRET_KEY);
-    return res.status(200).json({ admin, token });
+  
+    return res.status(201).json(token);
 
     
   } catch (error) {
@@ -46,16 +45,18 @@ const adminLogin = async (req, res) => {
   //VALIDATE ADMIN LOGIN
   console.log(req.cookies)
   const { email, password } = req.body;
-  console.log(req.body)
+  
 
 try{
+  //finding same email
   const admin = await adminschema.findOne({ email });
   if (!admin) {
-    return res.status(400).send("Invalid email or password");
+    return res.status(404).send("Invalid email or password");
   }
+  //password validating
   const validPassword = await bcrypt.compare(password, admin.password);
   if (!validPassword) {
-    return res.status(400).send("Invalid email or password");
+    return res.status(404).send("Invalid email or password");
   }
   //JWT TOKE CREATION
   const token = jwt.sign(
@@ -64,23 +65,20 @@ try{
     
   );
   res.cookie('token',token)
-  return res.status(200).json({ admin, token });
+  return res.status(201).json({ admin, token });
  }catch(err){
-  return res.status(500).json({ message: err.message });
+  return res.status(500).json({ message: 'Internal server error while creating token' });
  }
 };
 //PRODUCT ADDING SECTION
 const addproduct = async (req, res) => {
- 
-  console.log("Request Body:", req.body);
-
   const { error } = validateProductDtl(req.body);
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
 
   try {
-    const { name, category, description, price, image } = req.body;
+    const { name, category, description, price,} = req.body;
     const product = new productSchema({
       name,
       description,
@@ -91,7 +89,7 @@ const addproduct = async (req, res) => {
     await product.save();
     res.status(201).json({ product });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: 'Invalid input data.' });
   }
 };
 //update product
@@ -99,12 +97,9 @@ const addproduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   const { id } = req.params;
 
-  const { error } = validateProductDtl(req.body);
-  if (error) {
-    return res.status(400).send(error.details[0].message);
-  }
+ 
   try {
-    const { name, category, description, price, image } = req.body;
+    const { name, category, description, price, } = req.body;
     const product = await productSchema.findById(id);
     console.log(id);
     if (!product) {
@@ -124,9 +119,9 @@ const updateProduct = async (req, res) => {
         category: category,
       }
     );
-    res.status(200).json({ success: true, message: "updated successfully" });
+    res.status(201).json({ success: true, message: "updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 //delete products
@@ -155,7 +150,7 @@ console.log(token)
   if (products.length === 0) {
     res.status(404).json({ message: "no products found" });
   } else {
-    res.status(201).json(products);
+    res.status(200).json(products);
   }
 };
 // view product
@@ -164,9 +159,9 @@ const viewProduct = async (req, res) => {
   const productId = req.params.id;
   const product = await productSchema.findById(productId);
   if (!product) {
-    res.status(404);
+    res.status(404).json({message:'product not found'})
   } else {
-    res.status(201).json(product);
+    res.status(200).json(product);
   }
 };
 // view users
@@ -220,10 +215,10 @@ const getcart = async (req, res) => {
     });
   }
   {
-    res.status(201).json(cart);
+    res.status(200).json(cart);
   }
 };
-// view order
+// view orders
 
 const orders = async (req, res) => {
   
@@ -234,7 +229,7 @@ const orders = async (req, res) => {
     });
   }
   {
-    res.status(201).json(products);
+    res.status(200).json(products);
   }
 };
 //specifiic order
@@ -249,9 +244,11 @@ if(!products){
     message:'order not found'
   })
 }else{
-  res.status(201).json(products)
+  res.status(200).json(products)
 }
 };
+
+//totel revenue
 const totalRevenue=async(req,res)=>{
   const revenue=await orderSchema.aggregate([
     {$group:{_id:null,totalrevenue:{$sum:'$totalPrice'}}}
