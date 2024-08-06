@@ -10,7 +10,7 @@ router.post('/admin/login', controller.adminLogin);
 router.post('/admin/products/add',uploadFile,controller.addproduct)
 router.put('/admin/Products/update/:id',uploadFile,controller.updateProduct)
 router.delete('/admin/products/delete/:id', controller.deleteProduct)
-router.get('/admin/users', veryfyToken,controller.viewUsers)
+router.get('/admin/users',controller.viewUsers)
 router.get('/admin/user/:id', controller.viewUser)
 router.get('/admin/products', controller.viewProducts)
 router.get('/admin/product/:id', controller.viewProduct)

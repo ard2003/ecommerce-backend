@@ -167,7 +167,7 @@ const viewProduct = async (req, res) => {
 // view users
 
 const viewUsers = async (req, res) => {
-  const users = await UserSchema.find();
+  const users = await UserSchema.UserSchema.find();
   if (users.length === 0) {
     res.status(404).json({ message: "no users found" });
   } else {
@@ -179,7 +179,7 @@ const viewUsers = async (req, res) => {
 const viewUser = async (req, res) => {
   const userId = req.params.id;
 
-  const user = await UserSchema.findById(userId);
+  const user = await UserSchema.UserSchema.findById(userId);
   if (!user) {
     res.status(404).json({
       message: "no user found",
