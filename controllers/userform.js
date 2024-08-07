@@ -1,43 +1,39 @@
-const dotenv = require('dotenv')
-const {UserSchema,validateUser}=require('../models/user')
-const bcrypt = require('bcryptjs')
-const jwt =require('jsonwebtoken')
-const productSchema=require('../models/product')
+const dotenv = require("dotenv");
+const { UserSchema, validateUser } = require("../models/user");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const productSchema = require("../models/product");
+const cartSchema = require("../models/cart");
 
 //userregistration
-const userRegistration = async (req,res)=>{
-    const { error } = validateUser(req.body);
-    if (error) {
-      return res.status(400).send(error.details[0].message,"error from joi");
-    }
-    const findUser =  await UserSchema.findOne({email:req.body.email})
-    if(findUser){
-     return res.status(400).json({message:'user allready exited'})
-     
-    }//password hashing
-    try {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(req.body.password, salt);
-      user = new UserSchema({
-        name: req.body.name,
-        email: req.body.email,
-        password: hashedPassword,
-      });
-  
-      await user.save();
-    
-      return res.status(201).json(user);
-  
-      
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
-    }
-}
-//userlogin
-const userLogin= async (req,res)=>{
-  const { email, password } = req.body;
-  
+const userRegistration = async (req, res) => {
+  const { error } = validateUser(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message, "error from joi");
+  }
+  const findUser = await UserSchema.findOne({ email: req.body.email });
+  if (findUser) {
+    return res.status(400).json({ message: "user allready exited" });
+  } //password hashing
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    user = new UserSchema({
+      name: req.body.name,
+      email: req.body.email,
+      password: hashedPassword,
+    });
 
+    await user.save();
+
+    return res.status(201).json(user);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+//userlogin
+const userLogin = async (req, res) => {
+  const { email, password } = req.body;
 
   //finding same email
   const user = await UserSchema.findOne({ email });
@@ -49,21 +45,19 @@ const userLogin= async (req,res)=>{
   if (!validPassword) {
     return res.status(404).send("Invalid email or password");
   }
-  //JWT TOKE CREATION
-  // const token = jwt.sign(
-  //   { _id: user._id, email: user.email, username: user.username },
-  //   process.env.SECRET_KEY
-    
-  // );
-  // res.cookie('token',token)
-  return res.status(201).json(user);
-}
+  const token = jwt.sign(
+    { _id: admin._id, email: admin.email, username: admin.username },
+    process.env.SECRET_KEY
+  );
+  res.cookie("token", token);
+  return res.status(201).json({ user, token });
+};
 //product section
 
 //all productd
 const viewProducts = async (req, res) => {
-  const token=req.cookies
-console.log(token)
+  const token = req.cookies;
+  console.log(token);
   const products = await productSchema.find();
   if (products.length === 0) {
     res.status(404).json({ message: "no products found" });
@@ -76,7 +70,7 @@ const viewProduct = async (req, res) => {
   const productId = req.params.id;
   const product = await productSchema.findById(productId);
   if (!product) {
-    res.status(404).json({message:'product not found'})
+    res.status(404).json({ message: "product not found" });
   } else {
     res.status(200).json(product);
   }
@@ -97,8 +91,69 @@ const productByCatagory = async (req, res) => {
 };
 
 //add to cart
-const addToCart=async(req,res)=>{
-  
-}
+const addToCart = async (req, res) => {
+  try {
+    const { token } = req.cookies;
+    console.log(token);
+    const { productId } = req.body;
+    //tokenvalidation
+    if (!token) {
+      return res
+        .status(401)
+        .json({ success: false, message: "token not provided" });
+    }
+    const valid = await jwt.verify(token, process.env.SECRET_KEY);
+    const userId = valid._id;
+    let cart = await cartSchema.findOne({ userId });
+    //add to exiting cart
+    if (cart) {
+      const productIndex = cart.cart.findIndex(
+        (item) => item.productId.toString() === productId
+      );
+      if (productIndex > -1) {
+        cart.cart[productIndex].quantity += 1;
+      } else {
+        cart.cart.push({ productId, quantity: 1 });
+      }
+      //create new cart
+    } else {
+      cart = new cartSchema({
+        userId,
+        cart: [{ productId, quantity: 1 }],
+      });
+    }
+    await cart.save();
+    res.status(201).json({ message: "product added successfully" });
+    console.log("product added successfully");
+  } catch (error) {
+    console.error("error :", error);
+  }
+};
+//view Cart
+const getCart = async (req, res) => {
+  const { token } = req.cookies;
 
-module.exports={userRegistration,userLogin,viewProducts,viewProduct,productByCatagory}
+  const valid = await jwt.verify(token, process.env.SECRET_KEY);
+
+  const userId = valid._id;
+console.log(userId)
+  const user = await cartSchema
+    .findOne({ userId: userId })
+    .populate("cart.productId");
+    console.log(user,'this is user ')
+  if (!user || user.cart.length === 0) {
+    res.status(404).json({ message: "cart is empty" });
+  }
+  res.status(200).json(user);
+};
+//increment cart items
+
+module.exports = {
+  userRegistration,
+  userLogin,
+  viewProducts,
+  viewProduct,
+  productByCatagory,
+  addToCart,
+  getCart,
+};

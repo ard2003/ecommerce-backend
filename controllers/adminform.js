@@ -61,9 +61,7 @@ try{
   //JWT TOKE CREATION
   const token = jwt.sign(
     { _id: admin._id, email: admin.email, username: admin.username },
-    process.env.SECRET_KEY
-    
-  );
+    process.env.SECRET_KEY);  
   res.cookie('token',token)
   return res.status(201).json({ admin, token });
  }catch(err){
