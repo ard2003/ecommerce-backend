@@ -94,7 +94,6 @@ const productByCatagory = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const { token } = req.cookies;
-    console.log(token);
     const { productId } = req.body;
     //tokenvalidation
     if (!token) {
@@ -147,6 +146,14 @@ console.log(userId)
   res.status(200).json(user);
 };
 //increment cart items
+ const incrementQuantity = async (req,res)=>{
+  const { token } = req.cookies;
+  const { productId } = req.body;
+  const valid = await jwt.verify(token, process.env.SECRET_KEY);
+  const userId = valid._id;
+
+  const user = cartSchema.findOne({userId:userId})
+ } 
 
 module.exports = {
   userRegistration,
