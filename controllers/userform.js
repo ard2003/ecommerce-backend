@@ -135,25 +135,70 @@ const getCart = async (req, res) => {
   const valid = await jwt.verify(token, process.env.SECRET_KEY);
 
   const userId = valid._id;
-console.log(userId)
+  console.log(userId);
   const user = await cartSchema
     .findOne({ userId: userId })
     .populate("cart.productId");
-    console.log(user,'this is user ')
+  console.log(user, "this is user ");
   if (!user || user.cart.length === 0) {
     res.status(404).json({ message: "cart is empty" });
   }
   res.status(200).json(user);
 };
 //increment cart items
- const incrementQuantity = async (req,res)=>{
+const incrementQuantity = async (req, res) => {
   const { token } = req.cookies;
   const { productId } = req.body;
   const valid = await jwt.verify(token, process.env.SECRET_KEY);
   const userId = valid._id;
 
-  const user = cartSchema.findOne({userId:userId})
- } 
+  const cart = await cartSchema.findOne({ userId: userId });
+const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
+
+  if (itemIndex > -1) {
+    cart.cart[itemIndex].quantity += 1;
+  }
+  await cart.save();
+  res.status(200).send("Product quantity increased");
+};
+//cart items dcriment
+const dcrimentQuantity = async (req, res) => {
+  const { token } = req.cookies;
+  const { productId } = req.body;
+  const valid = await jwt.verify(token, process.env.SECRET_KEY);
+  const userId = valid._id;
+
+  const cart = await cartSchema.findOne({ userId: userId });
+const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
+
+  if (itemIndex > -1) {
+    cart.cart[itemIndex].quantity -= 1;
+  }
+  await cart.save();
+  res.status(201).send("Product quantity decreased");
+};
+//remove cart items
+
+const deleteItems = async(req,res)=>{
+  const { token } = req.cookies;
+  const { productId } = req.body;
+  const valid = await jwt.verify(token, process.env.SECRET_KEY);
+  const userId=valid._id
+  const cart = await cartSchema.findOne({ userId: userId });
+  const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
+if(itemIndex> -1){
+  cart.cart.splice(itemIndex,1)
+}
+await cart.save()
+res.status(201).json({message:'item deleted'})
+  
+
+}
+//add to wishlist
+const wishListAdd=async(req,res)=>{
+  
+}
+
 
 module.exports = {
   userRegistration,
@@ -163,4 +208,7 @@ module.exports = {
   productByCatagory,
   addToCart,
   getCart,
+  incrementQuantity,
+  dcrimentQuantity,
+  deleteItems
 };
