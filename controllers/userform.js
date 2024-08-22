@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const productSchema = require("../models/product");
 const cartSchema = require("../models/cart");
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 //userregistration
 const userRegistration = async (req, res) => {
@@ -148,12 +149,14 @@ const getCart = async (req, res) => {
 //increment cart items
 const incrementQuantity = async (req, res) => {
   const { token } = req.cookies;
-  const { productId } = req.body;
+  const { productId } = req.params;
   const valid = await jwt.verify(token, process.env.SECRET_KEY);
   const userId = valid._id;
 
   const cart = await cartSchema.findOne({ userId: userId });
-const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
+  const itemIndex = cart.cart.findIndex(
+    (item) => item.productId.toString() === productId
+  );
 
   if (itemIndex > -1) {
     cart.cart[itemIndex].quantity += 1;
@@ -164,12 +167,14 @@ const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === pr
 //cart items dcriment
 const dcrimentQuantity = async (req, res) => {
   const { token } = req.cookies;
-  const { productId } = req.body;
+  const { productId } = req.params;
   const valid = await jwt.verify(token, process.env.SECRET_KEY);
   const userId = valid._id;
 
   const cart = await cartSchema.findOne({ userId: userId });
-const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
+  const itemIndex = cart.cart.findIndex(
+    (item) => item.productId.toString() === productId
+  );
 
   if (itemIndex > -1) {
     cart.cart[itemIndex].quantity -= 1;
@@ -179,26 +184,87 @@ const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === pr
 };
 //remove cart items
 
-const deleteItems = async(req,res)=>{
+const deleteItems = async (req, res) => {
   const { token } = req.cookies;
-  const { productId } = req.body;
+  const { productId } = req.params;
   const valid = await jwt.verify(token, process.env.SECRET_KEY);
-  const userId=valid._id
+  const userId = valid._id;
   const cart = await cartSchema.findOne({ userId: userId });
-  const itemIndex = cart.cart.findIndex((item) => item.productId.toString() === productId)
-if(itemIndex> -1){
-  cart.cart.splice(itemIndex,1)
-}
-await cart.save()
-res.status(201).json({message:'item deleted'})
-  
+  const itemIndex = cart.cart.findIndex(
+    (item) => item.productId.toString() === productId
+  );
+  if (itemIndex > -1) {
+    cart.cart.splice(itemIndex, 1);
+  }
+  await cart.save();
+  res.status(201).json({ message: "item deleted" });
+};
+//buy items
 
-}
-//add to wishlist
-const wishListAdd=async(req,res)=>{
-  
-}
+const order = async (req, res) => {
+  try {
+    const { token } = req.cookies;
+    const valid = jwt.verify(token, process.env.SECRET_KEY);
+    const userId = valid._id;
+    const cartData = await cartSchema.findOne({ userId: userId });
+    if (!cartData || cartData.cart.length == 0) {
+      return res.status(404).json({ message: "cart is empty" });
+    }
+    const line_items = [];
+    for (const cartItem of cartData.cart) {
+      const product = await productSchema.findById(cartItem.productId);
+      if (!product) {
+        res.status(404).send(`Product with ID ${cartItem.productId} not found`);
+      }
+      line_items.push({
+        price_data: {
+          currency: "inr",
+          product_data: {
+            name: product.name,
+          },
+          unit_amount: Math.round(product.price * 100),
+        },
+        quantity: cartItem.quantity,
+      });
+    }
+    //stripe section
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: line_items,
+      success_url: "https://react-e-commerce-project-eight.vercel.app/success",
+      cancel_url: "https://react-e-commerce-project-eight.vercel.app",
+    });
+    const sessionId = session.id;
+    const sessionUrl = session.url;
+    res.cookie("session", sessionId);
+    res.send(sessionUrl);
+    res.status(200).json({message:'succes'})
+  } catch (error) {
+    console.error(error,'form trycatch');
+    // Handle specific JWT errors
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).send("Invalid token signature");
+    }
 
+    // General error handling
+    res.status(500).send("An error occurred while processing your order");
+  }
+};
+//by cart items
+const orderSucces= async(req,res)=>{
+  const {session,token}=req.cookies
+  const valid = jwt.verify(token, process.env.SECRET_KEY);
+    const userId = valid._id;
+
+    const Cart=await cartSchema.findOne({userId}).populate({
+      path:'cart.productId',
+      model:'product'
+    })
+    if(!Cart||Cart.cart.length===0){
+      return res.status(200).send("No products found in your cart");
+    }
+}
 
 module.exports = {
   userRegistration,
@@ -210,5 +276,6 @@ module.exports = {
   getCart,
   incrementQuantity,
   dcrimentQuantity,
-  deleteItems
+  deleteItems,
+  order,
 };
