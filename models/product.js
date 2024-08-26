@@ -37,5 +37,5 @@ const validateProductDtl = (product) => {
   return schema.validate(product);      
 };
 
-module.exports = mongoose.model('Product', productSchema);
+module.exports = mongoose.model("products", productSchema);
 module.exports.validateProductDtl = validateProductDtl;

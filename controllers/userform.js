@@ -4,7 +4,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const productSchema = require("../models/product");
 const cartSchema = require("../models/cart");
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const orderSchema = require("../models/order");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 //userregistration
 const userRegistration = async (req, res) => {
@@ -239,9 +240,9 @@ const order = async (req, res) => {
     const sessionUrl = session.url;
     res.cookie("session", sessionId);
     res.send(sessionUrl);
-    res.status(200).json({message:'succes'})
+    res.status(200).json({ message: "succes" });
   } catch (error) {
-    console.error(error,'form trycatch');
+    console.error(error, "form trycatch");
     // Handle specific JWT errors
     if (error.name === "JsonWebTokenError") {
       return res.status(401).send("Invalid token signature");
@@ -252,19 +253,63 @@ const order = async (req, res) => {
   }
 };
 //by cart items
-const orderSucces= async(req,res)=>{
-  const {session,token}=req.cookies
+const orderSucces = async (req, res) => {
+  const { session, token } = req.cookies;
   const valid = jwt.verify(token, process.env.SECRET_KEY);
-    const userId = valid._id;
+  const userId = valid._id;
 
-    const Cart=await cartSchema.findOne({userId}).populate({
-      path:'cart.productId',
-      model:'product'
-    })
-    if(!Cart||Cart.cart.length===0){
-      return res.status(200).send("No products found in your cart");
-    }
-}
+  const Cart = await cartSchema.findOne({ userId }).populate({
+    path: "cart.productId",
+    model: "products",
+  });
+  if (!Cart || Cart.cart.length === 0) {
+    return res.status(200).send("No products found in your cart");
+  }
+  let totalItems = 0;
+  let totalPrice = 0;
+
+  Cart.cart.forEach((item) => {
+    const quantity = item.quantity || 0;
+    const price = item.productId.price || 0;
+
+    totalItems += quantity;
+    totalPrice += quantity * price;
+  });
+
+  const order = new orderSchema({
+    userId: Cart.userId,
+    totalItems,
+    totalPrice,
+    orderId: `ORD${session}`,
+  });
+  Cart.cart.forEach((item) => {
+    order.products.push({
+      productId: item.productId._id,
+      quantity: item.quantity,
+    });
+  });
+  await order.save();
+
+  Cart.cart = [];
+  await Cart.save();
+
+  res.status(200).send("Order placed successfully");
+};
+//view orders
+
+const orders = async (req, res) => {
+  const { token } = req.cookies;
+  const valid = jwt.verify(token, process.env.SECRET_KEY);
+  const userId = valid._id;
+
+  const order = await orderSchema.findOne({ userId });
+
+  if (!order) {
+    res.status(404).send("No order records");
+  }
+
+  res.status(200).json(order);
+};
 
 module.exports = {
   userRegistration,
@@ -278,4 +323,6 @@ module.exports = {
   dcrimentQuantity,
   deleteItems,
   order,
+  orderSucces,
+  orders,
 };
