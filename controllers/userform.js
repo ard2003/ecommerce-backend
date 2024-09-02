@@ -48,11 +48,13 @@ const userLogin = async (req, res) => {
     return res.status(404).send("Invalid email or password");
   }
   const token = jwt.sign(
-    { _id: admin._id, email: admin.email, username: admin.username },
+    { _id: user._id, email: user.email, username: user.username },
     process.env.SECRET_KEY
   );
   res.cookie("token", token);
+  console.log(req.cookies)
   return res.status(201).json({ user, token });
+ 
 };
 //product section
 
